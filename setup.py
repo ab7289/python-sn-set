@@ -1,18 +1,13 @@
 from setuptools import find_packages, setup
 
-dependecies = [
-    "environs",
-    "requests",
-    "click",
-    "pandas"
-]
+dependecies = ["environs==9.3.2", "requests==2.25.1", "click==7.1.2", "pandas==1.2.4"]
 test_dependencies = [
-    "pytest",
-    "pytest-cov",
-    "coverage",
-    "flake8",
-    "black",
-    "isort"
+    "pytest==6.2.4",
+    "pytest-cov==2.11.1",
+    "coverage==5.5",
+    "flake8==3.9.1",
+    "black==21.5b0",
+    "isort==5.8.0",
 ]
 
 setup(
@@ -24,11 +19,7 @@ setup(
     license="BSD",
     install_requires=dependecies,
     include_package_data=True,
-    entry_points={
-        "console_scripts": [
-            "snset = sn_set.cli:main"
-        ]
-    },
+    entry_points={"console_scripts": ["snset = sn_set.cli:main"]},
     tests_require=test_dependencies,
-    test_suite="tests"
+    test_suite="tests",
 )
