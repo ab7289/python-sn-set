@@ -8,6 +8,7 @@ test_dependencies = [
     "flake8==3.9.1",
     "black==21.5b0",
     "isort==5.8.0",
+    "requests-mock==1.9.2",
 ]
 
 setup(
