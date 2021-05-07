@@ -53,13 +53,26 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         if not name:
             raise ValueError("IDs cannot be null or empty")
 
+    fields = [
+        "name",
+        "state",
+        "update_source",
+        "description",
+        "sys_created_on",
+        "commit_date",
+        "sys_updated_by",
+        "sys_updated_on",
+        "collisions",
+    ]
+
     id_list = ",".join(set_ids)
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"
     params = {
         "sysparm_query": (
             f"state=committed^nameIN{id_list}"
             f"^commit_dateISNOTEMPTY^ORDERBYinstall_date"
-        )
+        ),
+        "sysparm_fields": ",".join(fields),
     }
     return make_request(uri, path_params=params)
 

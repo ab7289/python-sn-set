@@ -5,3 +5,4 @@ omit =
     */distutils/*
     tests/*
     venv/*
+relative_files = True

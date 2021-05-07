@@ -9,6 +9,7 @@ test_dependencies = [
     "black==21.5b0",
     "isort==5.8.0",
     "requests-mock==1.9.2",
+    "coveralls-3.0.1",
 ]
 
 setup(
