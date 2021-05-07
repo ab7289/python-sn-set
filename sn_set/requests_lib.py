@@ -70,7 +70,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     params = {
         "sysparm_query": (
             f"state=committed^nameIN{id_list}"
-            f"^commit_dateISNOTEMPTY^ORDERBYinstall_date"
+            f"^commit_dateISNOTEMPTY^ORDERBYcommit_date"
         ),
         "sysparm_fields": ",".join(fields),
         "sysparm_display_value": "true",

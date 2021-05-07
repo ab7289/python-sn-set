@@ -34,7 +34,7 @@ def main(source, target, file_name):
     print("Begin get source sets")
     source_sets = list(map(lambda x: x.get("name"), get_update_sets(source)))
     print(f"Retrieved Source sets: {len(source_sets)}")
-    print(f"source_set[0]: {source_sets[0]}")
+
     print("\nBegin get Target sets")
     target_sets = list(map(lambda x: x.get("name"), get_update_sets(target)))
     print(f"Retrieved Target sets: {len(target_sets)}")
