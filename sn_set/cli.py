@@ -1,6 +1,7 @@
-from typing import List
+from typing import Dict, List
 
 import click
+import xlsxwriter
 
 # from .requests_lib import get_update_sets
 
@@ -36,14 +37,17 @@ def main(source, target):
     # target_sets = get_update_sets(target)
     print("Retrieved Target sets: {len(target_sets)}")
 
-    # set_dif = get_set_diff(source_sets, target_sets)
+    # set_diff = get_set_diff(source_sets, target_sets)
 
     print("Get install order")
     # ordered_sets = get_install_order(source, set_dif)
+    # get the elements that weren't in the list of retrieved update sets
+    # new_sets = get_set_diff(
+    #     set_diff,
+    #     list(map(lambda x: x.get("name")), ordered_sets)
+    # )
 
-    # TODO get the elements that weren't in the list of retrieved update sets
-
-    # get them from the update set table
+    # ordered_sets += get_install_order_new(source, new_sets)
 
     # TODO output
 
@@ -72,5 +76,40 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
 
-    # TODO need to handle case where names are slightly different
-    return [item for item in left if item not in right]
+    return [
+        item
+        for item in left
+        if item.lower().strip() not in list(map(lambda x: x.lower().strip(), right))
+    ]
+
+
+def to_excel(update_sets: List[Dict[str, str]], file: str = "output") -> bool:
+    """
+    Takes a list of dictionary items and outputs them to a excel.
+    Takes and optional filename and path to output too
+
+    Parameters:
+    update_sets: List[Dict[str,str]] - The data to write to excel
+    file: str - Optional the name of the file to output to. default is 'output'
+
+    Returns: True if successful, false otherwise
+    """
+    if not update_sets or not isinstance(update_sets, list) or len(update_sets) == 0:
+        print("update set list was empty, exiting")
+        return False
+    headers = [key for key in update_sets[0].keys()]
+    print(f"headers: {headers}")
+    with xlsxwriter.Workbook(f"{file}.xlsx") as workbook:
+        # add worksheet
+        worksheet = workbook.add_worksheet()
+
+        # write headers
+        for idx, header in enumerate(headers):
+            worksheet.write(0, idx, header)
+
+        # write data
+        for idx, update_set in enumerate(update_sets, start=1):
+            for kdix, (k, v) in enumerate(update_set.items()):
+                worksheet.write(idx, headers.index(k), v)
+
+        return True

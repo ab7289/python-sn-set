@@ -1,3 +1,5 @@
+from os import path
+
 import pytest
 
 from sn_set import cli
@@ -43,6 +45,7 @@ def test_cli_valid(runner):
         (["fish"], None, "error"),
         ([None, "fish"], ["cat"], "error"),
         (["cat", "fish"], ["fish", 1], "error"),
+        (["Cat", " doG ", "fish"], ["cat", "dog"], ["fish"]),
     ],
 )
 def test_set_diff_values(test_value1, test_value2, expected_value):
@@ -51,3 +54,26 @@ def test_set_diff_values(test_value1, test_value2, expected_value):
             cli.get_set_diff(test_value1, test_value2)
     else:
         assert cli.get_set_diff(test_value1, test_value2) == expected_value
+
+
+@pytest.mark.parametrize(
+    "test_value,expected_value",
+    [(None, "output.xlsx"), ("test_file_name", "test_file_name.xlsx")],
+)
+def test_to_excel_valid(test_value, expected_value, runner):
+    test_set_list = [
+        {"name": "set1", "sys_id": "12345"},
+        {"name": "set2", "sys_id": "54321"},
+    ]
+    with runner.isolated_filesystem():
+        if test_value:
+            cli.to_excel(test_set_list, file=test_value)
+        else:
+            cli.to_excel(test_set_list)
+
+        assert path.exists(expected_value) is True
+
+
+@pytest.mark.parametrize("test_value", [None, {}, [], 1])
+def test_to_excel_invalid(test_value):
+    assert cli.to_excel(test_value) is False
