@@ -39,7 +39,7 @@ jobs:
         COVERALLS_PARALLEL: true
       run: |
         python -m pip install --upgrade coveralls
-        coveralls --service=github
+        coveralls --service=github-actions
 
   coveralls:
     name: Indicate completion to coveralls.io
