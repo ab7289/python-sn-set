@@ -33,7 +33,9 @@ jobs:
       run: |
         tox -e py
     - name: Upload completion to coveralls.io
-      run: coveralls
+      run: |
+        python -m pip install --upgrade coveralls
+        coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
@@ -47,7 +49,7 @@ jobs:
     steps:
       - name: Finish
         run: |
-          pip3 install --upgrade coveralls
+          python -m pip install --upgrade coveralls
           coveralls --finish
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
