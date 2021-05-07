@@ -29,8 +29,19 @@ def main(source, target):
     """
     print(f"Begin retrieving update sets from source: {source} and target: {target}")
 
+    print("Begin get source sets")
     # source_sets = get_update_sets(source)
+    print("Retrieved Source sets: {len(source_sets)}")
+    print("Begin get Target sets")
     # target_sets = get_update_sets(target)
+    print("Retrieved Target sets: {len(target_sets)}")
+
+    # set_dif = get_set_diff(source_sets, target_sets)
+
+    print("Get install order")
+    # ordered_sets = get_install_order(source, set_dif)
+
+    # TODO output
 
     exit(0)
 
