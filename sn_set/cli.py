@@ -3,17 +3,18 @@ from typing import Dict, List
 import click
 import xlsxwriter
 
-# from .requests_lib import get_update_sets
+from .requests_lib import get_install_order, get_install_order_new, get_update_sets
 
 
 @click.command()
+@click.option("--file", "-f", help="Specify the output file name if desired")
 @click.option(
     "--target", "-t", required=True, help="The instance you want to compare to"
 )
 @click.option(
     "--source", "-s", required=True, help="The instance you want update sets from"
 )
-def main(source, target):
+def main(source, target, file_name):
     """
     snset is a python cli tool for retrieving the list of installed
     update sets in two ServiceNow instances, comparing them, and
@@ -31,27 +32,29 @@ def main(source, target):
     print(f"Begin retrieving update sets from source: {source} and target: {target}")
 
     print("Begin get source sets")
-    # source_sets = get_update_sets(source)
+    source_sets = get_update_sets(source)
     print("Retrieved Source sets: {len(source_sets)}")
     print("Begin get Target sets")
-    # target_sets = get_update_sets(target)
+    target_sets = get_update_sets(target)
     print("Retrieved Target sets: {len(target_sets)}")
 
-    # set_diff = get_set_diff(source_sets, target_sets)
+    set_diff = get_set_diff(source_sets, target_sets)
 
     print("Get install order")
-    # ordered_sets = get_install_order(source, set_dif)
+    ordered_sets = get_install_order(source, set_diff)
     # get the elements that weren't in the list of retrieved update sets
-    # new_sets = get_set_diff(
-    #     set_diff,
-    #     list(map(lambda x: x.get("name")), ordered_sets)
-    # )
+    new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name")), ordered_sets))
 
-    # ordered_sets += get_install_order_new(source, new_sets)
+    if new_sets and len(new_sets) > 0:
+        ordered_sets += get_install_order_new(source, new_sets)
 
-    # TODO output
-
-    exit(0)
+    print("Output to excel")
+    if to_excel(ordered_sets, file_name):
+        print("Success!")
+        exit(0)
+    else:
+        print("There was an error writing the spreadsheet")
+        exit(-1)
 
 
 def get_set_diff(left: List[str], right: List[str]) -> List[str]:
