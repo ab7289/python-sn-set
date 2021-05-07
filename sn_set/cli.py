@@ -42,12 +42,13 @@ def main(source, target, file_name):
     print("\nCompute set difference")
     set_diff = get_set_diff(source_sets, target_sets)
 
-    print("\nGet install order")
+    print(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
     # get the elements that weren't in the list of retrieved update sets
     new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name"), ordered_sets)))
 
     if new_sets and len(new_sets) > 0:
+        print("Getting newly created update sets")
         ordered_sets += get_install_order_new(source, new_sets)
 
     print("Output to excel")
