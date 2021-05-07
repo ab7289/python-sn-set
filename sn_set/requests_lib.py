@@ -50,7 +50,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     #     if not id_regex.match(sys_id):
     #         raise ValueError("Each ID must be a valid sys_id")
     for name in set_ids:
-        if not name:
+        if not name or not isinstance(name, str):
             raise ValueError("IDs cannot be null or empty")
 
     fields = [
@@ -91,7 +91,38 @@ def get_install_order_new(
     returns:
     list: list of update sets in the order they should be installed
     """
-    raise NotImplementedError()
+    if is_invalid_instance(instance_name):
+        raise ValueError("Please enter a valid instance name.")
+
+    if not isinstance(set_ids, List):
+        raise ValueError("set_ids must be a list")
+
+    for name in set_ids:
+        if not name or not isinstance(name, str):
+            raise ValueError("IDs cannot be null or empty")
+
+    fields = [
+        "name",
+        "state",
+        # "update_source",
+        "description",
+        "sys_created_on",
+        # "commit_date",
+        "sys_updated_by",
+        "sys_updated_on",
+        # "collisions",
+    ]
+
+    id_list = ",".join(set_ids)
+    uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
+    params = {
+        "sysparm_query": (
+            f"nameIN{id_list}^installed_fromISEMPTY"
+            "^install_date=NULL^ORDERBYsys_updated_on"
+        ),
+        "sysparm_fields": ",".join(fields),
+    }
+    return make_request(uri, path_params=params)
 
 
 def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
