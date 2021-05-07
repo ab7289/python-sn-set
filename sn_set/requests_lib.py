@@ -81,6 +81,10 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
 
     # return result_sets
 
+    # TODO figure out a way to catch error 400 error and then split it into multiple requests # noqa E501
+    # perhaps just send each request with like 25 update set names or something, will still have # noqa E501
+    # to sort at the end
+
     id_list = ",".join(set_ids)
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"
     params = {

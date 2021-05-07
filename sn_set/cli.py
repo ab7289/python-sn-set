@@ -83,6 +83,7 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
 
+    # TODO make this faster, maybe with pandas
     return [
         item
         for item in left
