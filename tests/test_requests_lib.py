@@ -67,3 +67,74 @@ def test_make_request_missing_pass(requests_mock, mock_empty_env_vars):
     mock_uri = "mock://some-test.com"
     with pytest.raises(ValueError):
         make_request(mock_uri)
+
+
+def test_get_update_sets_valid(monkeypatch):
+
+    mock_payload = [{"name": "an update set", "sys_id": "12345"}]
+
+    def mock_make_request(instance_name, path_params):
+        return mock_payload
+
+    from sn_set import requests_lib
+
+    monkeypatch.setattr(requests_lib, "make_request", mock_make_request)
+    r = requests_lib.get_update_sets("nyudev")
+    assert r == mock_payload
+
+
+def test_get_update_set_invalid(monkeypatch):
+    from sn_set.requests_lib import get_update_sets
+
+    with pytest.raises(ValueError):
+        get_update_sets("invalid instance")
+
+
+def test_get_install_order_valid(monkeypatch):
+    mock_payload = [{"name": "an update set", "sys_id": "12345"}]
+
+    def mock_make_request(instance_name, path_params):
+        return mock_payload
+
+    from sn_set import requests_lib
+
+    monkeypatch.setattr(requests_lib, "get_install_order", mock_make_request)
+    r = requests_lib.get_install_order("nyudev", ["12345"])
+    assert r == mock_payload
+
+
+def test_get_install_order_invalid():
+    from sn_set.requests_lib import get_install_order
+
+    with pytest.raises(ValueError):
+        get_install_order("invalid_isntance", [])
+
+
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        (" nyu dev", "pass"),
+        (1234, "pass"),
+        (None, "error"),
+        (["1234"], "pass"),
+        (["123", "123"], "pass"),
+        ({}, "error"),
+        ("18cc3673db009bc0121325c15b9619f3", ["18cc3673db009bc0121325c15b9619f3"]),
+        (["18cc3673db009bc0121325c15b9619f3"], ["18cc3673db009bc0121325c15b9619f3"]),
+        (["18cc3673db009bc0121325c15b9619f3", None], "error"),
+    ],
+)
+def test_get_install_order_invalid_ids(test_input, expected, monkeypatch):
+    from sn_set import requests_lib
+
+    if expected == "error":
+        with pytest.raises(ValueError):
+            requests_lib.get_install_order("nyudev", test_input)
+    else:
+
+        def mock_make_request(instance_name, path_params):
+            return expected
+
+        monkeypatch.setattr(requests_lib, "get_install_order", mock_make_request)
+        r = requests_lib.get_install_order("nyudev", test_input)
+        assert r == expected

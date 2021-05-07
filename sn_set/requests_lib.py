@@ -4,6 +4,8 @@ import requests
 
 from .settings import Settings
 
+# import re
+
 
 def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
     """
@@ -17,7 +19,15 @@ def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
     Returns:
     list: List of update set dicts
     """
-    raise NotImplementedError()
+    if is_invalid_instance(instance_name):
+        raise ValueError("Please enter a valid instance name")
+
+    uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
+    params = {
+        "sysparm_query": "active=true^state=complete"
+        # TODO specify specific fields in sysparm_fields
+    }
+    return make_request(uri, path_params=params)
 
 
 def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, str]]:
@@ -32,7 +42,29 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     Returns:
     list: List of update sets in the order they should be installed
     """
-    raise NotImplementedError()
+    if is_invalid_instance(instance_name):
+        raise ValueError("Please enter a valid instance name.")
+
+    if not isinstance(set_ids, List):
+        raise ValueError("set_ids must be a list")
+
+    # id_regex = re.compile("[a-zA-Z0-9]{32}")
+    # for sys_id in set_ids:
+    #     if not id_regex.match(sys_id):
+    #         raise ValueError("Each ID must be a valid sys_id")
+    for name in set_ids:
+        if not name:
+            raise ValueError("IDs cannot be null or empty")
+
+    id_list = ",".join(set_ids)
+    uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"
+    params = {
+        "sysparm_query": (
+            f"state=committed^nameIN{id_list}"
+            f"^commit_dateISNOTEMPTY^ORDERBYinstall_date"
+        )
+    }
+    return make_request(uri, path_params=params)
 
 
 def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
@@ -56,3 +88,23 @@ def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]
     r.raise_for_status()
 
     return r.json().get("result")
+
+
+def is_invalid_instance(instance_name: str) -> bool:
+    """
+    TODO later add a method to call out to see if it's a valid instance
+    Checks whether the supplied instance is valid
+
+    parameters:
+    instance: str - the instance's unique name, i.e. nyudev
+
+    returns bool - True if it is valid, false otherwise
+    """
+    return (
+        instance_name != "nyu"
+        and instance_name != "nyuqa"
+        and instance_name != "nyutest"
+        and instance_name != "nyudev"
+        and instance_name != "nyutrain"
+        and instance_name != "nyusandbox"
+    )
