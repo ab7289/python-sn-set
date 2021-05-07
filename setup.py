@@ -4,7 +4,7 @@ dependecies = [
     "environs==9.3.2",
     "requests==2.25.1",
     "click==7.1.2",
-    "xlsxwriter-1.4.2",
+    "xlsxwriter==1.4.2",
 ]
 test_dependencies = [
     "pytest==6.2.4",
@@ -14,7 +14,7 @@ test_dependencies = [
     "black==21.5b0",
     "isort==5.8.0",
     "requests-mock==1.9.2",
-    "coveralls-3.0.1",
+    "coveralls==3.0.1",
 ]
 
 setup(
