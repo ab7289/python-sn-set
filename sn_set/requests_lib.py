@@ -73,6 +73,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
             f"^commit_dateISNOTEMPTY^ORDERBYinstall_date"
         ),
         "sysparm_fields": ",".join(fields),
+        "sysparm_display_value": "true",
     }
     return make_request(uri, path_params=params)
 

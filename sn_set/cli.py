@@ -7,7 +7,7 @@ from .requests_lib import get_install_order, get_install_order_new, get_update_s
 
 
 @click.command()
-@click.option("--file", "-f", help="Specify the output file name if desired")
+@click.option("--file-name", "-f", help="Specify the output file name if desired")
 @click.option(
     "--target", "-t", required=True, help="The instance you want to compare to"
 )
@@ -32,18 +32,20 @@ def main(source, target, file_name):
     print(f"Begin retrieving update sets from source: {source} and target: {target}")
 
     print("Begin get source sets")
-    source_sets = get_update_sets(source)
-    print("Retrieved Source sets: {len(source_sets)}")
-    print("Begin get Target sets")
-    target_sets = get_update_sets(target)
-    print("Retrieved Target sets: {len(target_sets)}")
+    source_sets = list(map(lambda x: x.get("name"), get_update_sets(source)))
+    print(f"Retrieved Source sets: {len(source_sets)}")
+    print(f"source_set[0]: {source_sets[0]}")
+    print("\nBegin get Target sets")
+    target_sets = list(map(lambda x: x.get("name"), get_update_sets(target)))
+    print(f"Retrieved Target sets: {len(target_sets)}")
 
+    print("\nCompute set difference")
     set_diff = get_set_diff(source_sets, target_sets)
 
-    print("Get install order")
+    print("\nGet install order")
     ordered_sets = get_install_order(source, set_diff)
     # get the elements that weren't in the list of retrieved update sets
-    new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name")), ordered_sets))
+    new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name"), ordered_sets)))
 
     if new_sets and len(new_sets) > 0:
         ordered_sets += get_install_order_new(source, new_sets)
@@ -86,7 +88,7 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
     ]
 
 
-def to_excel(update_sets: List[Dict[str, str]], file: str = "output") -> bool:
+def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
     """
     Takes a list of dictionary items and outputs them to a excel.
     Takes and optional filename and path to output too
@@ -102,6 +104,8 @@ def to_excel(update_sets: List[Dict[str, str]], file: str = "output") -> bool:
         return False
     headers = [key for key in update_sets[0].keys()]
     print(f"headers: {headers}")
+    if not file:
+        file = "output"
     with xlsxwriter.Workbook(f"{file}.xlsx") as workbook:
         # add worksheet
         worksheet = workbook.add_worksheet()
@@ -113,6 +117,8 @@ def to_excel(update_sets: List[Dict[str, str]], file: str = "output") -> bool:
         # write data
         for idx, update_set in enumerate(update_sets, start=1):
             for kdix, (k, v) in enumerate(update_set.items()):
+                if isinstance(v, dict):
+                    v = v.get("display_value")
                 worksheet.write(idx, headers.index(k), v)
 
         return True
