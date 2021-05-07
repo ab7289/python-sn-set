@@ -77,6 +77,23 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     return make_request(uri, path_params=params)
 
 
+def get_install_order_new(
+    instance_name: str, set_ids: List[str]
+) -> List[Dict[str, str]]:
+    """
+    Get the sets that are newly created since the last clone, i.e. don't have a record
+    in the sys_remote_update_set table
+
+    Parameters:
+    instance_name: str - the name of the instance to retrieve the sets from
+    set_ids: List[str] - the list of update set names to retrieve
+
+    returns:
+    list: list of update sets in the order they should be installed
+    """
+    raise NotImplementedError()
+
+
 def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
     """
     Makes a request to the given uri

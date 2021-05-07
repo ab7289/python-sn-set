@@ -138,3 +138,53 @@ def test_get_install_order_invalid_ids(test_input, expected, monkeypatch):
         monkeypatch.setattr(requests_lib, "get_install_order", mock_make_request)
         r = requests_lib.get_install_order("nyudev", test_input)
         assert r == expected
+
+
+def test_get_install_order_new_invalid():
+    from sn_set.requests_lib import get_install_order_new
+
+    with pytest.raises(ValueError):
+        get_install_order_new("invalid-instance", [])
+
+
+def test_get_install_order_new_valid(monkeypatch):
+    mock_payload = [{"name": "an update set", "sys_id": "12345"}]
+
+    def mock_make_request(instance_name, path_params):
+        return mock_payload
+
+    from sn_set import requests_lib
+
+    monkeypatch.setattr(requests_lib, "get_install_order_new", mock_make_request)
+
+    assert requests_lib.get_install_order_new("nyudev", ["12345"]) == mock_payload
+
+
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        (" nyu dev", "pass"),
+        (1234, "pass"),
+        (None, "error"),
+        (["1234"], "pass"),
+        (["123", "123"], "pass"),
+        ({}, "error"),
+        ("18cc3673db009bc0121325c15b9619f3", ["18cc3673db009bc0121325c15b9619f3"]),
+        (["18cc3673db009bc0121325c15b9619f3"], ["18cc3673db009bc0121325c15b9619f3"]),
+        (["18cc3673db009bc0121325c15b9619f3", None], "error"),
+    ],
+)
+def test_get_install_order_new_invalid_ids(test_input, expected, monkeypatch):
+    from sn_set import requests_lib
+
+    if expected == "error":
+        with pytest.raises(ValueError):
+            requests_lib.get_install_order_new("nyudev", test_input)
+    else:
+
+        def mock_make_request(instance_name, path_params):
+            return expected
+
+        monkeypatch.setattr(requests_lib, "get_install_order_new", mock_make_request)
+        r = requests_lib.get_install_order_new("nyudev", test_input)
+        assert r == expected
