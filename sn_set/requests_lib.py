@@ -4,6 +4,9 @@ import requests
 
 from .settings import Settings
 
+# import datetime
+
+
 # import re
 
 
@@ -64,6 +67,19 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         "sys_updated_on",
         "collisions",
     ]
+    # uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set" # noqa E501
+    # result_sets = []
+    # for name in set_ids:
+    #     params = {
+    #         "sysparm_query": f"state=committed^name={name}^commit_dateISNOTEMPTY^ORDERBYcommit_date", # noqa E501
+    #         "sysparm_fields": ",".join(fields),
+    #         "sysparm_display_value": "true"
+    #     }
+    #     result_sets.append(make_request(uri, path_params=params))
+
+    # result_sets = [ elem[0] for elem in result_sets if len(elem) > 0]
+
+    # return result_sets
 
     id_list = ",".join(set_ids)
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"

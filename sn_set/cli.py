@@ -44,6 +44,7 @@ def main(source, target, file_name):
 
     print(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
+    # print(f"ordered sets: {ordered_sets}")
     # get the elements that weren't in the list of retrieved update sets
     new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name"), ordered_sets)))
 
