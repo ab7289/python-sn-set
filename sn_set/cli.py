@@ -41,6 +41,10 @@ def main(source, target):
     print("Get install order")
     # ordered_sets = get_install_order(source, set_dif)
 
+    # TODO get the elements that weren't in the list of retrieved update sets
+
+    # get them from the update set table
+
     # TODO output
 
     exit(0)
@@ -68,4 +72,5 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
 
+    # TODO need to handle case where names are slightly different
     return [item for item in left if item not in right]
