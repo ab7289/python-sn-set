@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from requests.exceptions import HTTPError
 
@@ -108,6 +110,83 @@ def test_get_install_order_invalid():
 
     with pytest.raises(ValueError):
         get_install_order("invalid_isntance", [])
+
+
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_order_400(mock_make_request):
+    mock_payload = [{"name": "a set", "commit_date": "2021-05-08 18:39:00"}]
+    mock_uri = "https://nyudev.service-now.com/api/now/table/sys_remote_update_set"
+    test_fields = [
+        "name",
+        "state",
+        "update_source",
+        "description",
+        "sys_created_on",
+        "commit_date",
+        "sys_updated_by",
+        "sys_updated_on",
+        "collisions",
+    ]
+    mock_params1 = {
+        "sysparm_query": (
+            "state=committed^nameINa,b" "^commit_dateISNOTEMPTY^ORDERBYcommit_date"
+        ),
+        "sysparm_fields": ",".join(test_fields),
+        "sysparm_display_value": "true",
+    }
+    mock_params2 = {
+        "sysparm_query": (
+            "state=committed^name=a^commit_dateISNOTEMPTY^ORDERBYcommit_date"
+        ),
+        "sysparm_fields": ",".join(test_fields),
+        "sysparm_display_value": "true",
+    }
+    mock_params3 = {
+        "sysparm_query": (
+            "state=committed^name=b" "^commit_dateISNOTEMPTY^ORDERBYcommit_date"
+        ),
+        "sysparm_fields": ",".join(test_fields),
+        "sysparm_display_value": "true",
+    }
+
+    mocked_error = HTTPError(response=mock.Mock(status_code=400))
+
+    mock_make_request.side_effect = [mocked_error, mock_payload, mock_payload]
+
+    from sn_set.requests_lib import get_install_order
+
+    get_install_order("nyudev", ["a", "b"])
+    mock_make_request.assert_any_call(mock_uri, path_params=mock_params1)
+    mock_make_request.assert_any_call(mock_uri, path_params=mock_params2)
+    mock_make_request.assert_any_call(mock_uri, path_params=mock_params3)
+
+
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_list_both_400(mock_make_request):
+    mock_error = HTTPError(response=mock.Mock(status_code=400))
+    mock_make_request.side_effect = [mock_error, mock_error]
+
+    from sn_set.requests_lib import get_install_order
+
+    with pytest.raises(HTTPError):
+        get_install_order("nyudev", ["12345"])
+
+
+@pytest.mark.parametrize("test_value", [401, 404])
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_order_40X(mock_make_request, test_value):
+    mock_make_request.side_effect = HTTPError(
+        response=mock.Mock(status_code=test_value)
+    )
+
+    from sn_set.requests_lib import get_install_order
+
+    with pytest.raises(HTTPError):
+        get_install_order("nyudev", ["1234"])
+
+
+def test_get_install_order_succeed():
+    pass
 
 
 @pytest.mark.parametrize(

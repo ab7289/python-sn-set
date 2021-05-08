@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import Dict, List, Optional
 
 import requests
+from requests.exceptions import HTTPError
 
 from .settings import Settings
 
@@ -95,7 +97,37 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         "sysparm_fields": ",".join(fields),
         "sysparm_display_value": "true",
     }
-    return make_request(uri, path_params=params)
+    try:
+        return make_request(uri, path_params=params)
+    except HTTPError as e:
+        if e.response.status_code != 400:
+            raise e
+        else:
+            # if we get a 400, it could be that the URL is too long, so we split it up into # noqa E501
+            # multiple requests
+            print(
+                "get_install_order: Received 400, "
+                "attempting to split into multiple calls"
+            )
+            results = []
+            for name in set_ids:
+                params = {
+                    "sysparm_query": (
+                        f"state=committed^name={name}"
+                        f"^commit_dateISNOTEMPTY^ORDERBYcommit_date"
+                    ),
+                    "sysparm_fields": ",".join(fields),
+                    "sysparm_display_value": "true",
+                }
+                results.append(make_request(uri, path_params=params))
+
+            results = [elem[0] for elem in results if len(elem) > 0]
+            results.sort(
+                key=lambda elem: datetime.strptime(
+                    elem.get("commit_date"), "%Y-%m-%d %H:%M:%S"
+                )
+            )
+            return results
 
 
 def get_install_order_new(
