@@ -161,6 +161,24 @@ def test_get_install_order_400(mock_make_request):
     mock_make_request.assert_any_call(mock_uri, path_params=mock_params3)
 
 
+def test_get_install_list_internal_order():
+    expected_result = [
+        {"name": "a set", "commit_date": "2021-05-08 18:39:00"},
+        {"name": "b set", "commit_date": "2021-05-17 15:00:00"},
+    ]
+    mock_payload = [
+        {"name": "b set", "commit_date": "2021-05-17 15:00:00"},
+        {"name": "a set", "commit_date": "2021-05-08 18:39:00"},
+    ]
+
+    from sn_set.requests_lib import order_sets
+
+    result = order_sets(mock_payload)
+    print(f"result: {result}")
+    assert result[0] == expected_result[0]
+    assert result[1] == expected_result[1]
+
+
 @mock.patch("sn_set.requests_lib.make_request")
 def test_get_install_list_both_400(mock_make_request):
     mock_error = HTTPError(response=mock.Mock(status_code=400))

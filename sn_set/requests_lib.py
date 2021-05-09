@@ -122,12 +122,14 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
                 results.append(make_request(uri, path_params=params))
 
             results = [elem[0] for elem in results if len(elem) > 0]
-            results.sort(
-                key=lambda elem: datetime.strptime(
-                    elem.get("commit_date"), "%Y-%m-%d %H:%M:%S"
-                )
-            )
-            return results
+            return order_sets(results)
+
+
+def order_sets(set_list: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    set_list.sort(
+        key=lambda elem: datetime.strptime(elem.get("commit_date"), "%Y-%m-%d %H:%M:%S")
+    )
+    return set_list
 
 
 def get_install_order_new(
