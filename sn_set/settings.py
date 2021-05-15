@@ -4,6 +4,7 @@ from environs import Env
 class Settings:
     def __init__(self):
         env = Env()
+        env.read_env()
         self.user = env.str("SN_USER_NAME")
         self.password = env.str("SN_PASSWORD")
 
