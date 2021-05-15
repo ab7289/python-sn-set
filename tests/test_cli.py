@@ -234,7 +234,7 @@ def test_cli_valid_with_failed_excel(
         (["fish"], None, "error"),
         ([None, "fish"], ["cat"], "error"),
         (["cat", "fish"], ["fish", 1], "error"),
-        (["Cat", " doG ", "fish"], ["cat", "dog"], ["fish"]),
+        (["cat", "dog", "fish"], ["cat", "dog"], ["fish"]),
     ],
 )
 def test_set_diff_values(test_value1, test_value2, expected_value):

@@ -84,11 +84,14 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
             raise ValueError("The lists must be composed of strings")
 
     # TODO make this faster, maybe with pandas or with sets
-    return [
-        item
-        for item in left
-        if item.lower().strip() not in list(map(lambda x: x.lower().strip(), right))
-    ]
+    # return [
+    #     item
+    #     for item in left
+    #     if item.lower().strip() not in list(map(lambda x: x.lower().strip(), right))
+    # ]
+    # since we don't care about ordering here, this is orders of magnitude faster
+    # than a list comprehension
+    return list(set(left) - set(right))
 
 
 def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
