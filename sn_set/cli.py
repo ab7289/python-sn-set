@@ -127,11 +127,12 @@ def set_diff_list(left: List[str], right: List[str], is_timing=False) -> List[st
 
 def set_diff_set(left: List[str], right: List[str], is_timing=False) -> Set[str]:
     tic = time.perf_counter()
-    set_dif = {
-        item
-        for item in left
-        if item.lower().strip() not in set(map(lambda x: x.lower().strip(), right))
-    }
+    # set_dif = {
+    #     item
+    #     for item in left
+    #     if item.lower().strip() not in set(map(lambda x: x.lower().strip(), right))
+    # }
+    set_dif = list(set(left) - set(right))
     toc = time.perf_counter()
     print(f"Computed set difference with set in {toc - tic:0.4f} seconds")
     if is_timing:
