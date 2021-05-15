@@ -1,12 +1,16 @@
-from typing import Dict, List
+import time
+from collections.abc import Iterable
+from typing import Dict, List, Set
 
 import click
+import pandas as pd
 import xlsxwriter
 
 from .requests_lib import get_install_order, get_install_order_new, get_update_sets
 
 
 @click.command()
+@click.option("--timing", default=None, help="Turn on timing testing")
 @click.option("--file-name", "-f", help="Specify the output file name if desired")
 @click.option(
     "--target", "-t", required=True, help="The instance you want to compare to"
@@ -14,7 +18,7 @@ from .requests_lib import get_install_order, get_install_order_new, get_update_s
 @click.option(
     "--source", "-s", required=True, help="The instance you want update sets from"
 )
-def main(source, target, file_name):
+def main(source, target, file_name, timing):
     """
     snset is a python cli tool for retrieving the list of installed
     update sets in two ServiceNow instances, comparing them, and
@@ -40,7 +44,11 @@ def main(source, target, file_name):
     print(f"Retrieved Target sets: {len(target_sets)}")
 
     print("\nCompute set difference")
-    set_diff = get_set_diff(source_sets, target_sets)
+    set_diff = get_set_diff(source_sets, target_sets, timing=timing)
+
+    if timing:
+        print("Success")
+        exit(0)
 
     print(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
@@ -61,7 +69,7 @@ def main(source, target, file_name):
         exit(-1)
 
 
-def get_set_diff(left: List[str], right: List[str]) -> List[str]:
+def get_set_diff(left: List[str], right: List[str], timing=None) -> List[str]:
     """
     Finds all of the elements in the left input that are not present in the right
     returns the difference list. i.e. given two sets A and B, it returns the set A - B
@@ -72,10 +80,10 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
 
     returns: List[str] - left - right
     """
-    if not left or not isinstance(left, list):
-        raise ValueError("Left must be a list")
-    if not right or not isinstance(right, list):
-        raise ValueError("Right must be a list")
+    if not left or not isinstance(left, Iterable):
+        raise ValueError("Left must be Iterable")
+    if not right or not isinstance(right, Iterable):
+        raise ValueError("Right must be iterable")
     for item in left:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
@@ -84,11 +92,68 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
             raise ValueError("The lists must be composed of strings")
 
     # TODO make this faster, maybe with pandas or with sets
-    return [
+    ctr = 0
+    if timing:
+        for i in range(10):
+            print(f"iteration {i}")
+            if timing == "pandas":
+                ctr += set_diff_pandas(left, right, is_timing=True)
+            elif timing == "set":
+                ctr += set_diff_set(left, right, is_timing=True)
+            else:
+                ctr += set_diff_list(left, right, is_timing=True)
+        print(
+            f"Average set difference computation time for {timing} was {(ctr / 10):0.4f}"  # noqa E501
+        )
+
+    else:
+        return set_diff_list(left, right)
+
+
+def set_diff_list(left: List[str], right: List[str], is_timing=False) -> List[str]:
+    tic = time.perf_counter()
+    set_dif = [
         item
         for item in left
         if item.lower().strip() not in list(map(lambda x: x.lower().strip(), right))
     ]
+    toc = time.perf_counter()
+    print(f"Computed set difference with list in {toc - tic:0.4f} seconds")
+    if is_timing:
+        return toc - tic
+    else:
+        return set_dif
+
+
+def set_diff_set(left: List[str], right: List[str], is_timing=False) -> Set[str]:
+    tic = time.perf_counter()
+    set_dif = {
+        item
+        for item in left
+        if item.lower().strip() not in set(map(lambda x: x.lower().strip(), right))
+    }
+    toc = time.perf_counter()
+    print(f"Computed set difference with set in {toc - tic:0.4f} seconds")
+    if is_timing:
+        return toc - tic
+    else:
+        return set_dif
+
+
+def set_diff_pandas(left: List[str], right: List[str], is_timing=False) -> List[str]:
+    tic = time.perf_counter()
+    l_df = pd.DataFrame(list(map(lambda x: x.lower().strip(), left)))
+    r_df = pd.DataFrame(list(map(lambda x: x.lower().strip(), right)))
+
+    merged = l_df.merge(r_df, how="left", indicator=True).query("_merge == 'left_only'")
+
+    diff_list = merged.values.tolist()
+    toc = time.perf_counter()
+    print(f"Computed set difference with pandas in {toc - tic:0.4f} seconds")
+    if is_timing:
+        return toc - tic
+    else:
+        return diff_list
 
 
 def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
@@ -102,7 +167,11 @@ def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
 
     Returns: True if successful, false otherwise
     """
-    if not update_sets or not isinstance(update_sets, list) or len(update_sets) == 0:
+    if (
+        not update_sets
+        or not isinstance(update_sets, Iterable)
+        or len(update_sets) == 0
+    ):
         print("update set list was empty, exiting")
         return False
     headers = [key for key in update_sets[0].keys()]

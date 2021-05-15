@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -42,8 +43,8 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     if is_invalid_instance(instance_name):
         raise ValueError("Please enter a valid instance name.")
 
-    if not isinstance(set_ids, List):
-        raise ValueError("set_ids must be a list")
+    if not isinstance(set_ids, Iterable):
+        raise ValueError("set_ids must be iterable")
 
     # id_regex = re.compile("[a-zA-Z0-9]{32}")
     # for sys_id in set_ids:
@@ -127,8 +128,8 @@ def get_install_order_new(
     if is_invalid_instance(instance_name):
         raise ValueError("Please enter a valid instance name.")
 
-    if not isinstance(set_ids, List):
-        raise ValueError("set_ids must be a list")
+    if not isinstance(set_ids, Iterable):
+        raise ValueError("set_ids must be iterable")
 
     for name in set_ids:
         if not name or not isinstance(name, str):
