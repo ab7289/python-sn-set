@@ -29,35 +29,37 @@ def main(source, target, file_name):
     Will output to an excel file in the current directory, unless another
     is specified.
     """
-    print(f"Begin retrieving update sets from source: {source} and target: {target}")
+    click.echo(
+        f"Begin retrieving update sets from source: {source} and target: {target}"
+    )
 
-    print("Begin get source sets")
+    click.echo("Begin get source sets")
     source_sets = list(map(lambda x: x.get("name"), get_update_sets(source)))
-    print(f"Retrieved Source sets: {len(source_sets)}")
+    click.echo(f"Retrieved Source sets: {len(source_sets)}")
 
-    print("\nBegin get Target sets")
+    click.echo("\nBegin get Target sets")
     target_sets = list(map(lambda x: x.get("name"), get_update_sets(target)))
-    print(f"Retrieved Target sets: {len(target_sets)}")
+    click.echo(f"Retrieved Target sets: {len(target_sets)}")
 
-    print("\nCompute set difference")
+    click.echo("\nCompute set difference")
     set_diff = get_set_diff(source_sets, target_sets)
 
-    print(f"\nGet install order for {len(set_diff)} update sets")
+    click.echo(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
     # print(f"ordered sets: {ordered_sets}")
     # get the elements that weren't in the list of retrieved update sets
     new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name"), ordered_sets)))
 
     if new_sets and len(new_sets) > 0:
-        print("Getting newly created update sets")
+        click.echo("Getting newly created update sets")
         ordered_sets += get_install_order_new(source, new_sets)
 
-    print("Output to excel")
+    click.echo("Output to excel")
     if to_excel(ordered_sets, file_name):
-        print("Success!")
+        click.echo("Success!")
         exit(0)
     else:
-        print("There was an error writing the spreadsheet")
+        click.echo("There was an error writing the spreadsheet")
         exit(-1)
 
 
@@ -83,12 +85,6 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
 
-    # TODO make this faster, maybe with pandas or with sets
-    # return [
-    #     item
-    #     for item in left
-    #     if item.lower().strip() not in list(map(lambda x: x.lower().strip(), right))
-    # ]
     # since we don't care about ordering here, this is orders of magnitude faster
     # than a list comprehension
     return list(set(left) - set(right))
@@ -109,7 +105,7 @@ def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
         print("update set list was empty, exiting")
         return False
     headers = [key for key in update_sets[0].keys()]
-    print(f"headers: {headers}")
+    click.echo(f"headers: {headers}")
     if not file:
         file = "output"
     with xlsxwriter.Workbook(f"{file}.xlsx") as workbook:
