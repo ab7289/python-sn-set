@@ -3,7 +3,11 @@ from typing import Dict, List
 import click
 import xlsxwriter
 
-from .requests_lib import get_install_order, get_install_order_new, get_update_sets
+from sn_set.requests_lib import (
+    get_install_order,
+    get_install_order_new,
+    get_update_sets,
+)
 
 
 @click.command()
@@ -124,3 +128,7 @@ def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
                 worksheet.write(idx, headers.index(k), v)
 
         return True
+
+
+if __name__ == "__main__":
+    main()

@@ -103,9 +103,13 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
             return order_sets(results)
 
 
-def order_sets(set_list: List[Dict[str, str]]) -> List[Dict[str, str]]:
+def order_sets(
+    set_list: List[Dict[str, str]], order_by_field="commit_date"
+) -> List[Dict[str, str]]:
     set_list.sort(
-        key=lambda elem: datetime.strptime(elem.get("commit_date"), "%Y-%m-%d %H:%M:%S")
+        key=lambda elem: datetime.strptime(
+            elem.get(order_by_field), "%Y-%m-%d %H:%M:%S"
+        )
     )
     return set_list
 
@@ -155,7 +159,31 @@ def get_install_order_new(
         ),
         "sysparm_fields": ",".join(fields),
     }
-    return make_request(uri, path_params=params)
+    try:
+        return make_request(uri, path_params=params)
+    except HTTPError as ex:
+        if ex.response.status_code != 400:
+            raise ex
+        else:
+            # if we get a 400, it could be that the URL is too long, so we split it up into # noqa E501
+            # multiple requests
+            print(
+                "get_install_order_new: Received 400, "
+                "attempting to split into multiple calls"
+            )
+            results = []
+            for name in set_ids:
+                params = {
+                    "sysparm_query": (
+                        f"name={name}^installed_fromISEMPTY"
+                        "^install_date=NULL^ORDERBYsys_updated_on"
+                    ),
+                    "sysparm_fields": ",".join(fields),
+                }
+                results.append(make_request(uri, path_params=params))
+
+            results = [elem[0] for elem in results if len(elem) > 0]
+            return order_sets(results, order_by_field="sys_updated_on")
 
 
 def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
