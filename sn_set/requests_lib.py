@@ -226,4 +226,7 @@ def is_invalid_instance(instance_name: str) -> bool:
         and instance_name != "nyudev"
         and instance_name != "nyutrain"
         and instance_name != "nyusandbox"
+        and instance_name != "nyudev2"
+        and instance_name != "nyudev3"
+        and instance_name != "nyu2"
     )

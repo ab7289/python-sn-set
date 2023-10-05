@@ -72,7 +72,6 @@ def test_make_request_missing_pass(requests_mock, mock_empty_env_vars):
 
 
 def test_get_update_sets_valid(monkeypatch):
-
     mock_payload = [{"name": "an update set", "sys_id": "12345"}]
 
     def mock_make_request(instance_name, path_params):
