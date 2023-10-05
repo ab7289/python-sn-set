@@ -50,9 +50,13 @@ def main(source, target, file_name):
 
     click.echo(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
-    # print(f"ordered sets: {ordered_sets}")
     # get the elements that weren't in the list of retrieved update sets
-    new_sets = get_set_diff(set_diff, list(map(lambda x: x.get("name"), ordered_sets)))
+    set_names = (
+        list(map(lambda x: x.get("name"), ordered_sets))
+        if len(ordered_sets) > 0
+        else []
+    )
+    new_sets = get_set_diff(set_diff, set_names)
 
     if new_sets and len(new_sets) > 0:
         click.echo("Getting newly created update sets")

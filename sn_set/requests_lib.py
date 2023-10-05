@@ -23,7 +23,10 @@ def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
         raise ValueError("Please enter a valid instance name")
 
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
-    params = {"sysparm_query": "state=complete", "sysparm_fields": "name"}
+    params = {
+        "sysparm_query": "state=complete^ORstate=ignore",
+        "sysparm_fields": "name",
+    }
     return make_request(uri, path_params=params)
 
 
@@ -226,4 +229,7 @@ def is_invalid_instance(instance_name: str) -> bool:
         and instance_name != "nyudev"
         and instance_name != "nyutrain"
         and instance_name != "nyusandbox"
+        and instance_name != "nyudev2"
+        and instance_name != "nyudev3"
+        and instance_name != "nyu2"
     )
