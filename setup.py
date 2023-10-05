@@ -2,19 +2,19 @@ from setuptools import find_packages, setup
 
 dependecies = [
     "environs==9.3.2",
-    "requests==2.25.1",
-    "click==7.1.2",
-    "xlsxwriter==1.4.2",
+    "requests==2.31.0",
+    "click==8.1.7",
+    "xlsxwriter==3.1.6",
 ]
 test_dependencies = [
-    "pytest==6.2.4",
-    "pytest-cov==2.11.1",
-    "coverage==5.5",
-    "flake8==3.9.1",
-    "black==21.5b0",
-    "isort==5.8.0",
-    "requests-mock==1.9.2",
-    "coveralls==3.0.1",
+    "pytest==7.4.2",
+    "pytest-cov==4.1.0",
+    "coverage==7.3.2",
+    "flake8==6.1.0",
+    "black==23.9.1",
+    "isort==5.12.0",
+    "requests-mock==1.11.0",
+    "coveralls==7.3.2",
 ]
 
 setup(
