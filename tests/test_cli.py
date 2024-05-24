@@ -41,12 +41,12 @@ def test_cli_valid(
         {"name": "a set", "sys_id": "12345"},
         {"name": "b set", "sys_id": "54321"},
     ]
-    mock_set2 = [{"name": "a set", "sys_id": "12345"}]
-    mock_install_order = [{"name": "a set", "sys_id": "12345"}]
+    mock_set2 = [{"name": "a set", "sys_id": "54321"}]
+    mock_install_order = [{"name": "b set", "sys_id": "12345"}]
 
     mock_get_update_sets.side_effect = [mock_set1, mock_set2]
     mock_get_install_order.return_value = mock_install_order
-    mock_set_diff.side_effect = [["a set"], []]
+    mock_set_diff.side_effect = [["b set"], []]
     mock_to_excel.return_value = True
 
     test_source = "nyudev"
@@ -55,7 +55,12 @@ def test_cli_valid(
 
     mock_get_update_sets.assert_any_call("nyudev")
     mock_get_update_sets.assert_any_call("nyuqa")
-    mock_set_diff.assert_any_call(["a set", "b set"], ["a set"])
+    mock_set_diff.assert_has_calls(
+        [
+            mock.call(["a set", "b set"], ["a set"], debug=False),
+            mock.call(["b set"], ["b set"]),
+        ]
+    )
     mock_new_install_order.assert_not_called()
     mock_to_excel.assert_called_once_with(mock_install_order, None)
 
@@ -105,8 +110,13 @@ def test_cli_valid_with_new(
 
     mock_get_update_sets.assert_any_call("nyudev")
     mock_get_update_sets.assert_any_call("nyuqa")
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
+    mock_set_diff.assert_has_calls(
+        [
+            mock.call(["a set", "b set", "c set"], ["a set"], debug=False),
+            mock.call(["b set", "c set"], ["b set"]),
+        ]
+    )
+    # mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"], debug=False)
     mock_new_install_order.assert_called_with("nyudev", ["c set"])
     mock_to_excel.assert_called_once_with(mock_final_install_order, None)
 
@@ -154,13 +164,18 @@ def test_cli_valid_with_file(
     test_target = "nyuqa"
     test_file = "nyudev_order"
     result = runner.invoke(
-        cli.main, ["--source", test_source, "--target", test_target, "-f", test_file]
+        cli.main,
+        ["--source", test_source, "--target", test_target, "-f", test_file, "--debug"],
     )
 
     mock_get_update_sets.assert_any_call("nyudev")
     mock_get_update_sets.assert_any_call("nyuqa")
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
+    mock_set_diff.assert_has_calls(
+        [
+            mock.call(["a set", "b set", "c set"], ["a set"], debug=True),
+            mock.call(["b set", "c set"], ["b set"]),
+        ]
+    )
     mock_new_install_order.assert_called_with("nyudev", ["c set"])
     mock_to_excel.assert_called_once_with(mock_final_install_order, test_file)
 
@@ -210,8 +225,8 @@ def test_cli_valid_with_failed_excel(
 
     mock_get_update_sets.assert_any_call("nyudev")
     mock_get_update_sets.assert_any_call("nyuqa")
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
-    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"])
+    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"], debug=False)
+    mock_set_diff.assert_any_call(["a set", "b set", "c set"], ["a set"], debug=False)
     mock_new_install_order.assert_called_with("nyudev", ["c set"])
     mock_to_excel.assert_called_once_with(mock_final_install_order, None)
 
@@ -235,6 +250,7 @@ def test_cli_valid_with_failed_excel(
         ([None, "fish"], ["cat"], "error"),
         (["cat", "fish"], ["fish", 1], "error"),
         (["cat", "dog", "fish"], ["cat", "dog"], ["fish"]),
+        (["cat", "dog"], ["dog", "fish"], ["cat"]),
     ],
 )
 def test_set_diff_values(test_value1, test_value2, expected_value):

@@ -11,6 +11,13 @@ from sn_set.requests_lib import (
 
 
 @click.command()
+@click.option(
+    "--short",
+    is_flag=True,
+    flag_value=True,
+    help="Short circut - don't create excel file",
+)
+@click.option("--debug", is_flag=True, flag_value=True)
 @click.option("--file-name", "-f", help="Specify the output file name if desired")
 @click.option(
     "--target", "-t", required=True, help="The instance you want to compare to"
@@ -18,7 +25,7 @@ from sn_set.requests_lib import (
 @click.option(
     "--source", "-s", required=True, help="The instance you want update sets from"
 )
-def main(source, target, file_name):
+def main(source, target, file_name, debug, short):
     """
     snset is a python cli tool for retrieving the list of installed
     update sets in two ServiceNow instances, comparing them, and
@@ -40,16 +47,23 @@ def main(source, target, file_name):
     click.echo("Begin get source sets")
     source_sets = list(map(lambda x: x.get("name"), get_update_sets(source)))
     click.echo(f"Retrieved Source sets: {len(source_sets)}")
+    if debug:
+        click.echo("Retrieved update sets\n" + "\n".join(source_sets))
 
     click.echo("\nBegin get Target sets")
     target_sets = list(map(lambda x: x.get("name"), get_update_sets(target)))
     click.echo(f"Retrieved Target sets: {len(target_sets)}")
+    if debug:
+        click.echo("Retrieved update sets\n" + "\n".join(target_sets))
 
     click.echo("\nCompute set difference")
-    set_diff = get_set_diff(source_sets, target_sets)
+    set_diff = get_set_diff(source_sets, target_sets, debug=debug)
+    if debug:
+        click.echo("Set difference: " + "\n".join(set_diff))
 
     click.echo(f"\nGet install order for {len(set_diff)} update sets")
     ordered_sets = get_install_order(source, set_diff)
+
     # get the elements that weren't in the list of retrieved update sets
     set_names = (
         list(map(lambda x: x.get("name"), ordered_sets))
@@ -63,6 +77,9 @@ def main(source, target, file_name):
         ordered_sets += get_install_order_new(source, new_sets)
 
     click.echo("Output to excel")
+    if short:
+        click.echo("Short circuiting")
+        exit(0)
     if to_excel(ordered_sets, file_name):
         click.echo("Success!")
         exit(0)
@@ -71,7 +88,7 @@ def main(source, target, file_name):
         exit(-1)
 
 
-def get_set_diff(left: List[str], right: List[str]) -> List[str]:
+def get_set_diff(left: List[str], right: List[str], debug: bool = False) -> List[str]:
     """
     Finds all of the elements in the left input that are not present in the right
     returns the difference list. i.e. given two sets A and B, it returns the set A - B
@@ -92,6 +109,10 @@ def get_set_diff(left: List[str], right: List[str]) -> List[str]:
     for item in right:
         if not item or not isinstance(item, str):
             raise ValueError("The lists must be composed of strings")
+
+    if debug:
+        click.echo("Left:\n" + "\n".join(set(left)))
+        click.echo("\n\nRight:\n" + "\n".join(set(right)))
 
     # since we don't care about ordering here, this is orders of magnitude faster
     # than a list comprehension
