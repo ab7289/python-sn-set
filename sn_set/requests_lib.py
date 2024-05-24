@@ -81,7 +81,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     try:
         return make_request(uri, path_params=params)
     except HTTPError as e:
-        if e.response.status_code != 400:
+        if e.response.status_code != 400 and e.response.status_code != 414:
             raise e
         else:
             # if we get a 400, it could be that the URL is too long, so we split it up into # noqa E501
@@ -165,7 +165,7 @@ def get_install_order_new(
     try:
         return make_request(uri, path_params=params)
     except HTTPError as ex:
-        if ex.response.status_code != 400:
+        if ex.response.status_code != 400 and ex.response.status_code != 414:
             raise ex
         else:
             # if we get a 400, it could be that the URL is too long, so we split it up into # noqa E501
