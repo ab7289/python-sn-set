@@ -1,26 +1,26 @@
 from setuptools import find_packages, setup
 
 dependecies = [
-    "environs==9.3.2",
-    "requests==2.31.0",
-    "click==8.1.7",
-    "xlsxwriter==3.1.6",
+    "environs==15.0.1",
+    "requests==2.33.1",
+    "click==8.3.3",
+    "xlsxwriter==3.2.9",
 ]
 test_dependencies = [
-    "pytest==7.4.2",
-    "pytest-cov==4.1.0",
-    "coverage==7.3.2",
-    "flake8==6.1.0",
-    "black==23.9.1",
-    "isort==5.12.0",
-    "requests-mock==1.11.0",
-    "coveralls==7.3.2",
+    "pytest==9.0.3",
+    "pytest-cov==7.1.0",
+    "coverage==7.13.5",
+    "flake8==7.3.0",
+    "black==26.3.1",
+    "isort==8.0.1",
+    "requests-mock==1.12.1",
+    "coverage==7.13.5",
 ]
 
 setup(
     name="snset",
     packages=find_packages(exclude=["tests"]),
-    version="0.1.0",
+    version="0.2.0",
     description="CLI tool to retrieve and compare update sets from ServiceNow",
     author="Alex Biehl",
     license="BSD",
