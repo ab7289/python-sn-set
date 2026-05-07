@@ -227,10 +227,6 @@ def make_request(
             username=settings.get_user(),
             password=settings.get_password(),
         )
-        if not token:
-            raise ValueError("Unable to retrieve token")
-        else:
-            print(f"Got token: {token}")
 
         headers: Dict[str, str] = {
             "Authorization": f"Bearer {token['access_token']}",
