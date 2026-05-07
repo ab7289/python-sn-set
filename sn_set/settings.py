@@ -3,7 +3,7 @@ from environs import Env
 
 class Settings:
     def __init__(self):
-        env = Env()
+        env: Env = Env()
         env.read_env()
         self.user: str = env.str("SN_USER_NAME")
         self.password: str = env.str("SN_PASSWORD")
@@ -11,7 +11,7 @@ class Settings:
         if self.use_oauth:
             self.client_id: str = env.str("SN_SET_CLIENT_ID")
             self.client_secret: str = env.str("SN_SET_CLIENT_SECRET")
-            self.grant_type: str = env.str("SN_SET_GRANT_TYPE", "password")
+            self.grant_type: str = "password"
 
     def get_user(self) -> str:
         return self.user
