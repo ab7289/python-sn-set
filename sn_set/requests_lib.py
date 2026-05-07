@@ -217,6 +217,8 @@ def make_request(
         )
 
     if settings.get_use_oauth():
+        # currently this requests a new token for each call
+        # need to investigate way to persist refresh/access token
         client: OAuth2Session = OAuth2Session(
             client_id=settings.get_client_id(),
             client_secret=settings.get_client_secret(),
