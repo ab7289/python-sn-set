@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import requests
+from authlib.integrations.requests_client import OAuth2Session
 from requests.exceptions import HTTPError
 
 from .settings import Settings
@@ -23,11 +24,12 @@ def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
         raise ValueError("Please enter a valid instance name")
 
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
+    base_url: str = f"https://{instance_name}.service-now.com"
     params = {
         "sysparm_query": "state=complete^ORstate=ignore",
         "sysparm_fields": "name",
     }
-    return make_request(uri, path_params=params)
+    return make_request(uri, path_params=params, base_url=base_url)
 
 
 def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, str]]:
@@ -69,6 +71,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     ]
 
     id_list = ",".join(set_ids)
+    base_url: str = f"https://{instance_name}.service-now.com"
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"
     params = {
         "sysparm_query": (
@@ -79,7 +82,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         "sysparm_display_value": "true",
     }
     try:
-        return make_request(uri, path_params=params)
+        return make_request(uri, path_params=params, base_url=base_url)
     except HTTPError as e:
         if e.response.status_code != 400 and e.response.status_code != 414:
             raise e
@@ -100,7 +103,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
                     "sysparm_fields": ",".join(fields),
                     "sysparm_display_value": "true",
                 }
-                results.append(make_request(uri, path_params=params))
+                results.append(make_request(uri, path_params=params, base_url=base_url))
 
             results = [elem[0] for elem in results if len(elem) > 0]
             return order_sets(results)
@@ -154,6 +157,7 @@ def get_install_order_new(
     ]
 
     id_list = ",".join(set_ids)
+    base_url: str = f"https://{instance_name}.service-now.com"
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
     params = {
         "sysparm_query": (
@@ -163,7 +167,7 @@ def get_install_order_new(
         "sysparm_fields": ",".join(fields),
     }
     try:
-        return make_request(uri, path_params=params)
+        return make_request(uri, path_params=params, base_url=base_url)
     except HTTPError as ex:
         if ex.response.status_code != 400 and ex.response.status_code != 414:
             raise ex
@@ -183,13 +187,15 @@ def get_install_order_new(
                     ),
                     "sysparm_fields": ",".join(fields),
                 }
-                results.append(make_request(uri, path_params=params))
+                results.append(make_request(uri, path_params=params, base_url=base_url))
 
             results = [elem[0] for elem in results if len(elem) > 0]
             return order_sets(results, order_by_field="sys_updated_on")
 
 
-def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
+def make_request(
+    uri: str, path_params: Dict[str, str] = None, base_url: str | None = None
+) -> Optional[Dict]:
     """
     Makes a request to the given uri
 
@@ -201,15 +207,49 @@ def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]
     settings = Settings()
     if not settings.get_user() or not settings.get_password():
         raise ValueError("Username or Password is empty")
+    if settings.get_use_oauth() and (
+        not settings.get_client_id()
+        or not settings.get_client_secret()
+        or not settings.get_grant_type()
+    ):
+        raise ValueError(
+            "Client ID, Client Secret, and Grant Type are required to use OAuth2"
+        )
 
-    r = requests.get(
-        uri,
-        params=path_params,
-        auth=requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password()),
-    )
-    r.raise_for_status()
+    if settings.get_use_oauth():
+        client: OAuth2Session = OAuth2Session(
+            client_id=settings.get_client_id(),
+            client_secret=settings.get_client_secret(),
+            scope="useraccount",
+        )
+        token = client.fetch_token(
+            f"{base_url}/oauth_token.do",
+            username=settings.get_user(),
+            password=settings.get_password(),
+        )
+        if not token:
+            raise ValueError("Unable to retrieve token")
+        else:
+            print(f"Got token: {token}")
 
-    return r.json().get("result")
+        headers: Dict[str, str] = {
+            "Authorization": f"Bearer {token['access_token']}",
+            "Content-Type": "application/json",
+        }
+        r = requests.get(uri, params=path_params, headers=headers)
+        r.raise_for_status()
+        return r.json().get("result")
+    else:
+        r = requests.get(
+            uri,
+            params=path_params,
+            auth=requests.auth.HTTPBasicAuth(
+                settings.get_user(), settings.get_password()
+            ),
+        )
+        r.raise_for_status()
+
+        return r.json().get("result")
 
 
 def is_invalid_instance(instance_name: str) -> bool:
