@@ -7,12 +7,18 @@ from requests.exceptions import HTTPError
 
 from .settings import Settings
 
+# context holder to persist oauth2 tokens through
+# the execution
 context: Dict = {}
 
 
 def client_factory(*args, **kwargs) -> Tuple:
-    if client := context.get("client"):
-        return client, context.get("auth")
+    if not (base_url := kwargs.get("base_url")):
+        raise ValueError("base_url must be specified")
+    # we store the request config indexed by the base_url, since we
+    # need different tokens for each instance
+    if clientConfig := context.get(base_url):
+        return clientConfig.get("client"), clientConfig.get("auth")
 
     settings = Settings()
     if not settings.get_user() or not settings.get_password():
@@ -26,10 +32,6 @@ def client_factory(*args, **kwargs) -> Tuple:
             "Client ID, Client Secret, and Grant Type are required to use OAuth2"
         )
     if settings.get_use_oauth():
-        if not (base_url := kwargs.get("base_url")):
-            raise ValueError("base_url must be specified for OAuth2")
-        # currently this requests a new token for each call
-        # need to investigate way to persist refresh/access token
         client = OAuth2Session(
             client_id=settings.get_client_id(),
             client_secret=settings.get_client_secret(),
@@ -40,13 +42,14 @@ def client_factory(*args, **kwargs) -> Tuple:
             username=settings.get_user(),
             password=settings.get_password(),
         )
-        context["client"] = client
+        clientConfig: Dict = {"client": client}
+        context[base_url] = clientConfig
         return (client, None)
     else:
         client = requests
         auth = requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password())
-        context["client"] = client
-        context["auth"] = auth
+        clientConfig: Dict = {"client": client, "auth": auth}
+        context[base_url] = clientConfig
         return client, auth
 
 
@@ -92,10 +95,6 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     if not isinstance(set_ids, List):
         raise ValueError("set_ids must be a list")
 
-    # id_regex = re.compile("[a-zA-Z0-9]{32}")
-    # for sys_id in set_ids:
-    #     if not id_regex.match(sys_id):
-    #         raise ValueError("Each ID must be a valid sys_id")
     for name in set_ids:
         if not name or not isinstance(name, str):
             raise ValueError("IDs cannot be null or empty")

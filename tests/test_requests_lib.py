@@ -38,7 +38,7 @@ def test_make_request_valid(requests_mock, mock_env_vars):
         }
     ]
     requests_mock.get(mock_uri, json=mock_response, status_code=200)
-    r = make_request(test_uri, path_params=test_params)
+    r = make_request(test_uri, path_params=test_params, base_url="nyudev")
     assert r == valid_response
 
 
@@ -46,14 +46,14 @@ def test_make_request_unauthorized(requests_mock, mock_env_vars):
     mock_uri = "mock://some-test.com"
     requests_mock.get(mock_uri, status_code=401)
     with pytest.raises(HTTPError):
-        make_request(mock_uri)
+        make_request(mock_uri, base_url="some-test")
 
 
 def test_make_request_not_found(requests_mock, mock_env_vars):
     mock_uri = "mock://some-test.com"
     requests_mock.get(mock_uri, status_code=404)
     with pytest.raises(HTTPError):
-        make_request(mock_uri)
+        make_request(mock_uri, base_url="test")
 
 
 def test_make_request_no_data(requests_mock, mock_env_vars):
@@ -61,7 +61,7 @@ def test_make_request_no_data(requests_mock, mock_env_vars):
     mock_response = {"result": []}
 
     requests_mock.get(mock_uri, json=mock_response, status_code=200)
-    r = make_request(mock_uri)
+    r = make_request(mock_uri, base_url="test")
     assert r == []
 
 
