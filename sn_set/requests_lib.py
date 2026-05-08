@@ -1,10 +1,56 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
+from authlib.integrations.requests_client import OAuth2Session
 from requests.exceptions import HTTPError
 
 from .settings import Settings
+
+# context holder to persist oauth2 tokens through
+# the execution
+context: Dict = {}
+
+
+def client_factory(*args, **kwargs) -> Tuple:
+    if not (base_url := kwargs.get("base_url")):
+        raise ValueError("base_url must be specified")
+    # we store the request config indexed by the base_url, since we
+    # need different tokens for each instance
+    if clientConfig := context.get(base_url):
+        return clientConfig.get("client"), clientConfig.get("auth")
+
+    settings = Settings()
+    if not settings.get_user() or not settings.get_password():
+        raise ValueError("Username or Password is empty")
+    if settings.get_use_oauth() and (
+        not settings.get_client_id()
+        or not settings.get_client_secret()
+        or not settings.get_grant_type()
+    ):
+        raise ValueError(
+            "Client ID, Client Secret, and Grant Type are required to use OAuth2"
+        )
+    if settings.get_use_oauth():
+        client = OAuth2Session(
+            client_id=settings.get_client_id(),
+            client_secret=settings.get_client_secret(),
+            scope="useraccount",
+        )
+        client.fetch_token(
+            f"{base_url}/oauth_token.do",
+            username=settings.get_user(),
+            password=settings.get_password(),
+        )
+        clientConfig: Dict = {"client": client}
+        context[base_url] = clientConfig
+        return (client, None)
+    else:
+        client = requests
+        auth = requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password())
+        clientConfig: Dict = {"client": client, "auth": auth}
+        context[base_url] = clientConfig
+        return client, auth
 
 
 def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
@@ -23,11 +69,12 @@ def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
         raise ValueError("Please enter a valid instance name")
 
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
+    base_url: str = f"https://{instance_name}.service-now.com"
     params = {
         "sysparm_query": "state=complete^ORstate=ignore",
         "sysparm_fields": "name",
     }
-    return make_request(uri, path_params=params)
+    return make_request(uri, path_params=params, base_url=base_url)
 
 
 def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, str]]:
@@ -48,10 +95,6 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     if not isinstance(set_ids, List):
         raise ValueError("set_ids must be a list")
 
-    # id_regex = re.compile("[a-zA-Z0-9]{32}")
-    # for sys_id in set_ids:
-    #     if not id_regex.match(sys_id):
-    #         raise ValueError("Each ID must be a valid sys_id")
     for name in set_ids:
         if not name or not isinstance(name, str):
             raise ValueError("IDs cannot be null or empty")
@@ -69,6 +112,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
     ]
 
     id_list = ",".join(set_ids)
+    base_url: str = f"https://{instance_name}.service-now.com"
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_remote_update_set"
     params = {
         "sysparm_query": (
@@ -79,7 +123,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         "sysparm_display_value": "true",
     }
     try:
-        return make_request(uri, path_params=params)
+        return make_request(uri, path_params=params, base_url=base_url)
     except HTTPError as e:
         if e.response.status_code != 400 and e.response.status_code != 414:
             raise e
@@ -100,7 +144,7 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
                     "sysparm_fields": ",".join(fields),
                     "sysparm_display_value": "true",
                 }
-                results.append(make_request(uri, path_params=params))
+                results.append(make_request(uri, path_params=params, base_url=base_url))
 
             results = [elem[0] for elem in results if len(elem) > 0]
             return order_sets(results)
@@ -154,6 +198,7 @@ def get_install_order_new(
     ]
 
     id_list = ",".join(set_ids)
+    base_url: str = f"https://{instance_name}.service-now.com"
     uri = f"https://{instance_name}.service-now.com/api/now/table/sys_update_set"
     params = {
         "sysparm_query": (
@@ -163,7 +208,7 @@ def get_install_order_new(
         "sysparm_fields": ",".join(fields),
     }
     try:
-        return make_request(uri, path_params=params)
+        return make_request(uri, path_params=params, base_url=base_url)
     except HTTPError as ex:
         if ex.response.status_code != 400 and ex.response.status_code != 414:
             raise ex
@@ -183,13 +228,15 @@ def get_install_order_new(
                     ),
                     "sysparm_fields": ",".join(fields),
                 }
-                results.append(make_request(uri, path_params=params))
+                results.append(make_request(uri, path_params=params, base_url=base_url))
 
             results = [elem[0] for elem in results if len(elem) > 0]
             return order_sets(results, order_by_field="sys_updated_on")
 
 
-def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]:
+def make_request(
+    uri: str, path_params: Dict[str, str] = None, base_url: str | None = None
+) -> Optional[Dict]:
     """
     Makes a request to the given uri
 
@@ -197,18 +244,16 @@ def make_request(uri: str, path_params: Dict[str, str] = None) -> Optional[Dict]
     uri: str - The HTTP URI to gake the request against
     path_params: Dict - Dictionary of path params and their
         values to be added to the request
+    base_url - optional base_url to include when using OAuth2
     """
-    settings = Settings()
-    if not settings.get_user() or not settings.get_password():
-        raise ValueError("Username or Password is empty")
+    client, basicAuth = client_factory(base_url=base_url)
 
-    r = requests.get(
-        uri,
-        params=path_params,
-        auth=requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password()),
+    r: requests.Response = (
+        client.get(uri, params=path_params, auth=basicAuth)
+        if basicAuth
+        else client.get(uri, params=path_params)
     )
     r.raise_for_status()
-
     return r.json().get("result")
 
 

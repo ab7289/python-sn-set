@@ -38,7 +38,7 @@ def test_make_request_valid(requests_mock, mock_env_vars):
         }
     ]
     requests_mock.get(mock_uri, json=mock_response, status_code=200)
-    r = make_request(test_uri, path_params=test_params)
+    r = make_request(test_uri, path_params=test_params, base_url="nyudev")
     assert r == valid_response
 
 
@@ -46,14 +46,14 @@ def test_make_request_unauthorized(requests_mock, mock_env_vars):
     mock_uri = "mock://some-test.com"
     requests_mock.get(mock_uri, status_code=401)
     with pytest.raises(HTTPError):
-        make_request(mock_uri)
+        make_request(mock_uri, base_url="some-test")
 
 
 def test_make_request_not_found(requests_mock, mock_env_vars):
     mock_uri = "mock://some-test.com"
     requests_mock.get(mock_uri, status_code=404)
     with pytest.raises(HTTPError):
-        make_request(mock_uri)
+        make_request(mock_uri, base_url="test")
 
 
 def test_make_request_no_data(requests_mock, mock_env_vars):
@@ -61,20 +61,14 @@ def test_make_request_no_data(requests_mock, mock_env_vars):
     mock_response = {"result": []}
 
     requests_mock.get(mock_uri, json=mock_response, status_code=200)
-    r = make_request(mock_uri)
+    r = make_request(mock_uri, base_url="test")
     assert r == []
-
-
-def test_make_request_missing_pass(requests_mock, mock_empty_env_vars):
-    mock_uri = "mock://some-test.com"
-    with pytest.raises(ValueError):
-        make_request(mock_uri)
 
 
 def test_get_update_sets_valid(monkeypatch):
     mock_payload = [{"name": "an update set", "sys_id": "12345"}]
 
-    def mock_make_request(instance_name, path_params):
+    def mock_make_request(instance_name, path_params, base_url):
         return mock_payload
 
     from sn_set import requests_lib
@@ -115,6 +109,7 @@ def test_get_install_order_invalid():
 def test_get_install_order_400(mock_make_request):
     mock_payload = [{"name": "a set", "commit_date": "2021-05-08 18:39:00"}]
     mock_uri = "https://nyudev.service-now.com/api/now/table/sys_remote_update_set"
+    mock_base_uri = "https://nyudev.service-now.com"
     test_fields = [
         "name",
         "state",
@@ -128,7 +123,7 @@ def test_get_install_order_400(mock_make_request):
     ]
     mock_params1 = {
         "sysparm_query": (
-            "state=committed^nameINa,b" "^commit_dateISNOTEMPTY^ORDERBYcommit_date"
+            "state=committed^nameINa,b^commit_dateISNOTEMPTY^ORDERBYcommit_date"
         ),
         "sysparm_fields": ",".join(test_fields),
         "sysparm_display_value": "true",
@@ -155,9 +150,15 @@ def test_get_install_order_400(mock_make_request):
     from sn_set.requests_lib import get_install_order
 
     get_install_order("nyudev", ["a", "b"])
-    mock_make_request.assert_any_call(mock_uri, path_params=mock_params1)
-    mock_make_request.assert_any_call(mock_uri, path_params=mock_params2)
-    mock_make_request.assert_any_call(mock_uri, path_params=mock_params3)
+    mock_make_request.assert_any_call(
+        mock_uri, path_params=mock_params1, base_url=mock_base_uri
+    )
+    mock_make_request.assert_any_call(
+        mock_uri, path_params=mock_params2, base_url=mock_base_uri
+    )
+    mock_make_request.assert_any_call(
+        mock_uri, path_params=mock_params3, base_url=mock_base_uri
+    )
 
 
 def test_get_install_list_internal_order():

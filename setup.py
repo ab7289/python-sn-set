@@ -5,6 +5,7 @@ dependecies = [
     "requests==2.33.1",
     "click==8.3.3",
     "xlsxwriter==3.2.9",
+    "Authlib==1.7.2",
 ]
 test_dependencies = [
     "pytest==9.0.3",

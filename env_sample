@@ -1,2 +1,7 @@
 SN_USER_NAME=example
 SN_PASSWORD=example
+
+# optional values
+SN_SET_USE_OAUTH=true / false
+SN_SET_CLIENT_ID="example"
+SN_SET_CLIENT_SECRET="secret"
