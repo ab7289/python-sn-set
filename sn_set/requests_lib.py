@@ -44,7 +44,7 @@ def client_factory(*args, **kwargs) -> Tuple:
         )
         clientConfig: Dict = {"client": client}
         context[base_url] = clientConfig
-        return (client, None)
+        return client, None
     else:
         client = requests
         auth = requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password())
@@ -188,13 +188,11 @@ def get_install_order_new(
     fields = [
         "name",
         "state",
-        # "update_source",
         "description",
         "sys_created_on",
         # "commit_date",
         "sys_updated_by",
         "sys_updated_on",
-        # "collisions",
     ]
 
     id_list = ",".join(set_ids)
