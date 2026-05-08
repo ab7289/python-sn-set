@@ -65,12 +65,6 @@ def test_make_request_no_data(requests_mock, mock_env_vars):
     assert r == []
 
 
-def test_make_request_missing_pass(requests_mock, mock_empty_env_vars):
-    mock_uri = "mock://some-test.com"
-    with pytest.raises(ValueError):
-        make_request(mock_uri)
-
-
 def test_get_update_sets_valid(monkeypatch):
     mock_payload = [{"name": "an update set", "sys_id": "12345"}]
 

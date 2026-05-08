@@ -1,11 +1,53 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
 from authlib.integrations.requests_client import OAuth2Session
 from requests.exceptions import HTTPError
 
 from .settings import Settings
+
+context: Dict = {}
+
+
+def client_factory(*args, **kwargs) -> Tuple:
+    if client := context.get("client"):
+        return client, context.get("auth")
+
+    settings = Settings()
+    if not settings.get_user() or not settings.get_password():
+        raise ValueError("Username or Password is empty")
+    if settings.get_use_oauth() and (
+        not settings.get_client_id()
+        or not settings.get_client_secret()
+        or not settings.get_grant_type()
+    ):
+        raise ValueError(
+            "Client ID, Client Secret, and Grant Type are required to use OAuth2"
+        )
+    if settings.get_use_oauth():
+        if not (base_url := kwargs.get("base_url")):
+            raise ValueError("base_url must be specified for OAuth2")
+        # currently this requests a new token for each call
+        # need to investigate way to persist refresh/access token
+        client = OAuth2Session(
+            client_id=settings.get_client_id(),
+            client_secret=settings.get_client_secret(),
+            scope="useraccount",
+        )
+        client.fetch_token(
+            f"{base_url}/oauth_token.do",
+            username=settings.get_user(),
+            password=settings.get_password(),
+        )
+        context["client"] = client
+        return (client, None)
+    else:
+        client = requests
+        auth = requests.auth.HTTPBasicAuth(settings.get_user(), settings.get_password())
+        context["client"] = client
+        context["auth"] = auth
+        return client, auth
 
 
 def get_update_sets(instance_name: str) -> List[Dict[str, str]]:
@@ -203,51 +245,17 @@ def make_request(
     uri: str - The HTTP URI to gake the request against
     path_params: Dict - Dictionary of path params and their
         values to be added to the request
+    base_url - optional base_url to include when using OAuth2
     """
-    settings = Settings()
-    if not settings.get_user() or not settings.get_password():
-        raise ValueError("Username or Password is empty")
-    if settings.get_use_oauth() and (
-        not settings.get_client_id()
-        or not settings.get_client_secret()
-        or not settings.get_grant_type()
-    ):
-        raise ValueError(
-            "Client ID, Client Secret, and Grant Type are required to use OAuth2"
-        )
+    client, basicAuth = client_factory(base_url=base_url)
 
-    if settings.get_use_oauth():
-        # currently this requests a new token for each call
-        # need to investigate way to persist refresh/access token
-        client: OAuth2Session = OAuth2Session(
-            client_id=settings.get_client_id(),
-            client_secret=settings.get_client_secret(),
-            scope="useraccount",
-        )
-        token = client.fetch_token(
-            f"{base_url}/oauth_token.do",
-            username=settings.get_user(),
-            password=settings.get_password(),
-        )
-
-        headers: Dict[str, str] = {
-            "Authorization": f"Bearer {token['access_token']}",
-            "Content-Type": "application/json",
-        }
-        r = requests.get(uri, params=path_params, headers=headers)
-        r.raise_for_status()
-        return r.json().get("result")
-    else:
-        r = requests.get(
-            uri,
-            params=path_params,
-            auth=requests.auth.HTTPBasicAuth(
-                settings.get_user(), settings.get_password()
-            ),
-        )
-        r.raise_for_status()
-
-        return r.json().get("result")
+    r: requests.Response = (
+        client.get(uri, params=path_params, auth=basicAuth)
+        if basicAuth
+        else client.get(uri, params=path_params)
+    )
+    r.raise_for_status()
+    return r.json().get("result")
 
 
 def is_invalid_instance(instance_name: str) -> bool:
