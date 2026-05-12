@@ -354,3 +354,27 @@ def test_client_factory_oauth_client(mock_oauth_env_vars, monkeypatch):
 
     assert context[test_base_url] is not None
     assert context[test_base_url]["client"] == client
+
+    del context[test_base_url]
+
+
+def test_client_factory_basic_auth_client(mock_env_vars):
+    import requests
+
+    from sn_set.requests_lib import client_factory
+
+    test_base_url: str = "https://test.com"
+
+    client, auth = client_factory(base_url=test_base_url)
+
+    assert client is not None
+    assert auth is not None
+    assert isinstance(auth, requests.auth.HTTPBasicAuth)
+
+    from sn_set.requests_lib import context
+
+    assert context[test_base_url] is not None
+    assert context[test_base_url]["client"] == client
+    assert context[test_base_url]["auth"] == auth
+
+    del context[test_base_url]
