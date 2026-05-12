@@ -285,3 +285,10 @@ def test_get_install_order_new_invalid_ids(test_input, expected, monkeypatch):
         monkeypatch.setattr(requests_lib, "get_install_order_new", mock_make_request)
         r = requests_lib.get_install_order_new("nyudev", test_input)
         assert r == expected
+
+
+def test_client_factory_no_base_url(mock_oauth_env_vars):
+    from sn_set.requests_lib import client_factory
+
+    with pytest.raises(ValueError, match="base_url must be specified"):
+        client_factory()
