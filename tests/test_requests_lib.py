@@ -309,3 +309,24 @@ def test_client_factory_missing_username(monkeypatch):
 
     with pytest.raises(ValueError, match="Username or Password is empty"):
         client_factory(base_url="https://test.com")
+
+
+@pytest.mark.parametrize(
+    "test_client_id,test_client_secret", {("", "client-secret"), ("client_id", "")}
+)
+def test_client_factory_oauth_settings_check(
+    test_client_id, test_client_secret, monkeypatch
+):
+    monkeypatch.setenv("SN_USER_NAME", "abc123")
+    monkeypatch.setenv("SN_PASSWORD", "PASSWORD")
+    monkeypatch.setenv("SN_SET_USE_OAUTH", "true")
+    monkeypatch.setenv("SN_SET_CLIENT_ID", test_client_id)
+    monkeypatch.setenv("SN_SET_CLIENT_SECRET", test_client_secret)
+
+    from sn_set.requests_lib import client_factory
+
+    with pytest.raises(
+        ValueError,
+        match="Client ID, Client Secret, and Grant Type are required to use OAuth2",
+    ):
+        client_factory(base_url="https://test.com")
