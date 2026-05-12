@@ -292,3 +292,10 @@ def test_client_factory_no_base_url(mock_oauth_env_vars):
 
     with pytest.raises(ValueError, match="base_url must be specified"):
         client_factory()
+
+
+def test_client_factory_missing_password(mock_empty_env_vars):
+    from sn_set.requests_lib import client_factory
+
+    with pytest.raises(ValueError, match="Username or Password is empty"):
+        client_factory(base_url="https://test.com")
