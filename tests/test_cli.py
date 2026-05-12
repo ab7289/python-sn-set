@@ -280,3 +280,50 @@ def test_to_excel_valid(test_value, expected_value, runner):
 @pytest.mark.parametrize("test_value", [None, {}, [], 1])
 def test_to_excel_invalid(test_value):
     assert cli.to_excel(test_value, None) is False
+
+
+@mock.patch("sn_set.cli.get_set_diff")
+@mock.patch("sn_set.cli.get_install_order_new")
+@mock.patch("sn_set.cli.get_install_order")
+@mock.patch("sn_set.cli.get_update_sets")
+def test_cli_short_circuit(
+    mock_get_update_sets,
+    mock_get_install_order,
+    mock_new_install_order,
+    mock_set_diff,
+    runner,
+):
+    mock_set1 = [
+        {"name": "a set", "sys_id": "12345"},
+        {"name": "b set", "sys_id": "54321"},
+    ]
+    mock_set2 = [{"name": "a set", "sys_id": "54321"}]
+    mock_install_order = [{"name": "b set", "sys_id": "12345"}]
+
+    mock_get_update_sets.side_effect = [mock_set1, mock_set2]
+    mock_get_install_order.return_value = mock_install_order
+    mock_set_diff.side_effect = [["b set"], []]
+
+    test_source = "nyudev"
+    test_target = "nyuqa"
+    result = runner.invoke(
+        cli.main, ["--source", test_source, "--target", test_target, "--short"]
+    )
+
+    mock_get_update_sets.assert_any_call("nyudev")
+    mock_get_update_sets.assert_any_call("nyuqa")
+    mock_set_diff.assert_has_calls(
+        [
+            mock.call(["a set", "b set"], ["a set"], debug=False),
+            mock.call(["b set"], ["b set"]),
+        ]
+    )
+    mock_new_install_order.assert_not_called()
+
+    assert result.exit_code == 0
+    assert not result.exception
+    assert (
+        f"Begin retrieving update sets from "
+        f"source: {test_source} and target: {test_target}"
+    ) in result.output
+    assert "Short circuiting" in result.output
