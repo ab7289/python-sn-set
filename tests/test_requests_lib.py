@@ -299,3 +299,13 @@ def test_client_factory_missing_password(mock_empty_env_vars):
 
     with pytest.raises(ValueError, match="Username or Password is empty"):
         client_factory(base_url="https://test.com")
+
+
+def test_client_factory_missing_username(monkeypatch):
+    monkeypatch.setenv("SN_USER_NAME", "")
+    monkeypatch.setenv("SN_PASSWORD", "password")
+    monkeypatch.setenv("SN_SET_USE_OAUTH", "false")
+    from sn_set.requests_lib import client_factory
+
+    with pytest.raises(ValueError, match="Username or Password is empty"):
+        client_factory(base_url="https://test.com")
