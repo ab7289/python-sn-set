@@ -380,3 +380,91 @@ def test_client_factory_basic_auth_client(mock_env_vars):
 
     # clean up after test
     del context[test_base_url]
+
+
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_order_new_400_fallback(mock_make_request):
+    """
+    Tests that get_install_order_new handles 400/414 errors by
+    splitting the request into individual calls.
+    """
+    # Payload with different dates to verify sorting in fallback
+    payload_a = [{"name": "set_a", "sys_updated_on": "2021-05-10 12:00:00"}]
+    payload_b = [{"name": "set_b", "sys_updated_on": "2021-05-05 12:00:00"}]
+
+    mocked_error = HTTPError(response=mock.Mock(status_code=400))
+
+    # Side effect: 1. Fail initial bulk call, 2. Return set_a, 3. Return set_b
+    mock_make_request.side_effect = [mocked_error, payload_a, payload_b]
+
+    from sn_set.requests_lib import get_install_order_new
+
+    # We expect the result to be sorted by sys_updated_on (set_b comes first)
+    result = get_install_order_new("nyudev", ["set_a", "set_b"])
+
+    assert len(result) == 2
+    assert result[0]["name"] == "set_b"
+    assert result[1]["name"] == "set_a"
+
+    # Verify we made exactly 3 calls
+    assert mock_make_request.call_count == 3
+
+    # Verify the fallback query structure for the first individual item
+    args, kwargs = mock_make_request.call_args_list[1]
+    assert "name=set_a" in kwargs["path_params"]["sysparm_query"]
+    assert "installed_fromISEMPTY" in kwargs["path_params"]["sysparm_query"]
+
+
+@pytest.mark.parametrize("status_code", [401, 404, 500])
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_order_new_other_errors(mock_make_request, status_code):
+    """
+    Tests that non-400/414 errors are not caught by the fallback
+    and are re-raised.
+    """
+    mock_error = HTTPError(response=mock.Mock(status_code=status_code))
+    mock_make_request.side_effect = mock_error
+
+    from sn_set.requests_lib import get_install_order_new
+
+    with pytest.raises(HTTPError):
+        get_install_order_new("nyudev", ["set_a"])
+
+
+def test_get_install_order_new_ordering_logic():
+    """
+    Directly tests that the order_sets call inside get_install_order_new
+    uses the correct field (sys_updated_on) compared to the old function.
+    """
+    mock_payload = [
+        {"name": "Latest", "sys_updated_on": "2021-12-31 23:59:59"},
+        {"name": "Earliest", "sys_updated_on": "2021-01-01 00:00:00"},
+    ]
+
+    from sn_set.requests_lib import order_sets
+
+    result = order_sets(mock_payload, order_by_field="sys_updated_on")
+
+    assert result[0]["name"] == "Earliest"
+    assert result[1]["name"] == "Latest"
+
+
+@mock.patch("sn_set.requests_lib.make_request")
+def test_get_install_order_new_fields_verification(mock_make_request):
+    """
+    Verifies that the function requests the specific fields
+    required for new update sets.
+    """
+    mock_make_request.return_value = []
+    from sn_set.requests_lib import get_install_order_new
+
+    get_install_order_new("nyudev", ["test_set"])
+
+    args, kwargs = mock_make_request.call_args
+    requested_fields = kwargs["path_params"]["sysparm_fields"].split(",")
+
+    # Should NOT have commit_date (as it's commented out in your source)
+    assert "commit_date" not in requested_fields
+    # Should have core fields
+    assert "sys_updated_on" in requested_fields
+    assert "name" in requested_fields
