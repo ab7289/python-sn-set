@@ -355,6 +355,7 @@ def test_client_factory_oauth_client(mock_oauth_env_vars, monkeypatch):
     assert context[test_base_url] is not None
     assert context[test_base_url]["client"] == client
 
+    # clean up after test
     del context[test_base_url]
 
 
@@ -377,4 +378,5 @@ def test_client_factory_basic_auth_client(mock_env_vars):
     assert context[test_base_url]["client"] == client
     assert context[test_base_url]["auth"] == auth
 
+    # clean up after test
     del context[test_base_url]
