@@ -330,3 +330,27 @@ def test_client_factory_oauth_settings_check(
         match="Client ID, Client Secret, and Grant Type are required to use OAuth2",
     ):
         client_factory(base_url="https://test.com")
+
+
+def test_client_factory_oauth_client(mock_oauth_env_vars, monkeypatch):
+    from authlib.integrations.requests_client import OAuth2Session
+
+    def mock_fetch_token(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(OAuth2Session, "fetch_token", mock_fetch_token)
+
+    from sn_set.requests_lib import client_factory
+
+    test_base_url: str = "https://test.com"
+
+    client, auth = client_factory(base_url=test_base_url)
+
+    assert client is not None
+    assert auth is None
+    assert isinstance(client, OAuth2Session)
+
+    from sn_set.requests_lib import context
+
+    assert context[test_base_url] is not None
+    assert context[test_base_url]["client"] == client
