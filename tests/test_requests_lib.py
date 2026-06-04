@@ -322,6 +322,7 @@ def test_client_factory_oauth_settings_check(
     monkeypatch.setenv("SN_SET_USE_OAUTH", "true")
     monkeypatch.setenv("SN_SET_CLIENT_ID", test_client_id)
     monkeypatch.setenv("SN_SET_CLIENT_SECRET", test_client_secret)
+    monkeypatch.setenv("SN_SET_GRANT_TYPE", "password")
 
     from sn_set.requests_lib import client_factory
 
