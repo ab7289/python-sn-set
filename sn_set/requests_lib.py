@@ -21,8 +21,10 @@ def client_factory(*args, **kwargs) -> Tuple:
         return clientConfig.get("client"), clientConfig.get("auth")
 
     settings = Settings()
-    if not settings.get_user() or not settings.get_password():
-        raise ValueError("Username or Password is empty")
+    if not settings.get_user():
+        raise ValueError("Username is empty")
+    if not settings.get_use_oauth() and not settings.get_password():
+        raise ValueError("SN_PASSWORD not set for Basic Auth")
     if settings.get_use_oauth() and (
         not settings.get_client_id()
         or not settings.get_client_secret()
@@ -37,11 +39,16 @@ def client_factory(*args, **kwargs) -> Tuple:
             client_secret=settings.get_client_secret(),
             scope="useraccount",
         )
-        client.fetch_token(
-            f"{base_url}/oauth_token.do",
-            username=settings.get_user(),
-            password=settings.get_password(),
-        )
+        if settings.get_grant_type() == "password":
+            client.fetch_token(
+                f"{base_url}/oauth_token.do",
+                username=settings.get_user(),
+                password=settings.get_password(),
+            )
+        elif settings.get_grant_type() == "client_credentials":
+            client.fetch_token(
+                f"{base_url}/oauth_token.do", grant_type="client_credentials"
+            )
         clientConfig: Dict = {"client": client}
         context[base_url] = clientConfig
         return client, None

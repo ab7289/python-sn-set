@@ -297,7 +297,7 @@ def test_client_factory_no_base_url(mock_oauth_env_vars):
 def test_client_factory_missing_password(mock_empty_env_vars):
     from sn_set.requests_lib import client_factory
 
-    with pytest.raises(ValueError, match="Username or Password is empty"):
+    with pytest.raises(ValueError, match="SN_PASSWORD not set for Basic Auth"):
         client_factory(base_url="https://test.com")
 
 
@@ -307,7 +307,7 @@ def test_client_factory_missing_username(monkeypatch):
     monkeypatch.setenv("SN_SET_USE_OAUTH", "false")
     from sn_set.requests_lib import client_factory
 
-    with pytest.raises(ValueError, match="Username or Password is empty"):
+    with pytest.raises(ValueError, match="Username is empty"):
         client_factory(base_url="https://test.com")
 
 
@@ -322,6 +322,7 @@ def test_client_factory_oauth_settings_check(
     monkeypatch.setenv("SN_SET_USE_OAUTH", "true")
     monkeypatch.setenv("SN_SET_CLIENT_ID", test_client_id)
     monkeypatch.setenv("SN_SET_CLIENT_SECRET", test_client_secret)
+    monkeypatch.setenv("SN_SET_GRANT_TYPE", "password")
 
     from sn_set.requests_lib import client_factory
 
