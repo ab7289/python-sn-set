@@ -29,3 +29,22 @@ def mock_oauth_env_vars(monkeypatch):
     monkeypatch.setenv("SN_SET_CLIENT_ID", "client_id")
     monkeypatch.setenv("SN_SET_CLIENT_SECRET", "super-secure")
     monkeypatch.setenv("SN_SET_GRANT_TYPE", "invalid")
+
+
+@pytest.fixture
+def mock_oauth_client_credentials_env(monkeypatch):
+    monkeypatch.setenv("SN_USER_NAME", "abc123")
+    monkeypatch.setenv("SN_SET_USE_OAUTH", "true")
+    monkeypatch.setenv("SN_SET_CLIENT_ID", "client_id")
+    monkeypatch.setenv("SN_SET_CLIENT_SECRET", "super-secure")
+    monkeypatch.setenv("SN_SET_GRANT_TYPE", "client_credentials")
+
+
+@pytest.fixture
+def mock_oauth_password_env(monkeypatch):
+    monkeypatch.setenv("SN_USER_NAME", "abc123")
+    monkeypatch.setenv("SN_PASSWORD", "super-secret")
+    monkeypatch.setenv("SN_SET_USE_OAUTH", "true")
+    monkeypatch.setenv("SN_SET_CLIENT_ID", "client_id")
+    monkeypatch.setenv("SN_SET_CLIENT_SECRET", "super-secure")
+    monkeypatch.setenv("SN_SET_GRANT_TYPE", "password")
