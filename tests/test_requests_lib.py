@@ -120,6 +120,8 @@ def test_get_install_order_400(mock_make_request):
         "sys_updated_by",
         "sys_updated_on",
         "collisions",
+        "parent",
+        "remote_base_update_set",
     ]
     mock_params1 = {
         "sysparm_query": (
