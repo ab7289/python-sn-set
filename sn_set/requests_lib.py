@@ -116,6 +116,8 @@ def get_install_order(instance_name: str, set_ids: List[str]) -> List[Dict[str, 
         "sys_updated_by",
         "sys_updated_on",
         "collisions",
+        "parent",
+        # "remote_base_update_set",
     ]
 
     id_list = ",".join(set_ids)
@@ -200,6 +202,8 @@ def get_install_order_new(
         # "commit_date",
         "sys_updated_by",
         "sys_updated_on",
+        "parent",
+        # "base_update_set",
     ]
 
     id_list = ",".join(set_ids)
