@@ -133,7 +133,7 @@ def to_excel(update_sets: List[Dict[str, str]], file: str) -> bool:
     if not update_sets or not isinstance(update_sets, list) or len(update_sets) == 0:
         print("update set list was empty, exiting")
         return False
-    # TODO need to figure out how to include all the possible headers
+
     headers = [key for key in update_sets[0].keys()]
     click.echo(f"headers: {headers}")
     if not file:
